@@ -1,2 +1,4 @@
 target/*
 keyfile.json
+.appctlconfig
+.deployment/
