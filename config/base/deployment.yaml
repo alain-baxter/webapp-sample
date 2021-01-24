@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: webapp-sample
-          image: gcr.io/arctiq-mission-302500/webapp-sample@sha256:993117e4efc8b5288e785c72d483683d151e1160e1c15acf7338b55e3ebd80c4
+          image: gcr.io/arctiq-mission-302500/webapp-sample@sha256:9d481ec2b6168579230f816016b3b09c91529120cf1497a2e163f164441b58c6
           ports:
             - containerPort: 8080
