@@ -48,6 +48,7 @@ spec:
             - "clean"
             - "test"
             - "package"
+            - "-Drevision=`cat version`"
     - name: build-image-and-push
       taskRef:
         name: buildah
