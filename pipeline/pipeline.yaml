@@ -16,6 +16,10 @@ spec:
     - name: image-name
       description: The output Image Name
       type: string
+  results:
+    - name: image-digest
+      description: The digest of the created image
+      value: $(tasks.build-image-and-push.results.IMAGE_DIGEST)
   tasks:
     - name: fetch-source-code
       taskRef:
