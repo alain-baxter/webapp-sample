@@ -1,0 +1,22 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: webapp-sample
+  name: webapp-sample
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp-sample
+  template:
+    metadata:
+      labels:
+        app: webapp-sample
+    spec:
+      containers:
+        - name: webapp-sample
+          image: gcr.io/arctiq-mission-302500/webapp-sample@sha256:993117e4efc8b5288e785c72d483683d151e1160e1c15acf7338b55e3ebd80c4
+          ports:
+            - containerPort: 8080
