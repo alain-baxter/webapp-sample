@@ -1,0 +1,163 @@
+# SA for the Event Listener
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-listener-sa
+
+# Role to allow Event Listener to use K8s resources
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tekton-listener-minimal
+rules:
+  # EventListeners need to be able to fetch all namespaced resources
+  - apiGroups: ["triggers.tekton.dev"]
+    resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    # secrets are only needed for GitHub/GitLab interceptors
+    # configmaps is needed for updating logging config
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  # Permissions to create resources in associated TriggerTemplates
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns", "pipelineresources", "taskruns"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["impersonate"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    resourceNames: ["tekton-triggers"]
+    verbs: ["use"]
+
+# Binding Role to SA
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-listener-binding
+subjects:
+  - kind: ServiceAccount
+    name: tekton-listener-sa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tekton-listener-minimal
+
+# Cluster Role to allow Event Listener to use K8s resources
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tekton-listener-clusterrole
+rules:
+  # EventListeners need to be able to fetch any clustertriggerbindings
+  - apiGroups: ["triggers.tekton.dev"]
+    resources: ["clustertriggerbindings"]
+    verbs: ["get", "list", "watch"]
+
+# Bindgin Cluster Role to SA
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-triggers-example-clusterbinding
+subjects:
+  - kind: ServiceAccount
+    name: tekton-listener-sa
+    namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-listener-clusterrole
+
+# Event Listener resource
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: webapp-sample-event-listener
+spec:
+  triggers:
+    - name: github-pr-listener
+      interceptors:
+        - github:
+            secretRef:
+              secretName: github-webhook-secret
+              secretKey: secretToken
+            eventTypes:
+              - pull_request
+        - cel:
+            filter: "body.action in ['opened', 'synchronize', 'reopened']"
+      bindings:
+        - ref: github-pr-binding
+        - ref: webapp-sample-image-binding
+      template:
+        ref: webapp-sample-build-template
+    - name: github-push-listener
+      interceptors:
+        - github:
+            secretRef:
+              secretName: github-webhook-secret
+              secretKey: secretToken
+            eventTypes:
+              - push
+      bindings:
+        - ref: github-push-binding
+        - ref: webapp-sample-image-binding
+      template:
+        ref: webapp-sample-build-template
+  resources:
+    kubernetesResource:
+      spec:
+        template:
+          spec:
+            serviceAccountName: tekton-listener-sa
+            containers:
+              - resources:
+                  requests:
+                    memory: "64Mi"
+                    cpu: "250m"
+                  limits:
+                    memory: "128Mi"
+                    cpu: "500m"
+
+# Binding to translate GitHub pull request event to params
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: github-pr-binding
+spec:
+  params:
+    - name: git-url
+      value: $(body.repository.clone_url)
+    - name: git-revision
+      value: $(body.pull_request.head.sha)
+
+# Binding to supply Webapp Image Name
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: webapp-sample-image-binding
+spec:
+  params:
+    - name: image-name
+      value: "gcr.io/arctiq-mission-302500/webapp-sample"
+
+# Binding to translate GitHub push event to params
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: github-push-binding
+spec:
+  params:
+    - name: git-url
+      value: $(body.repository.clone_url)
+    - name: git-revision
+      value: $(body.after)

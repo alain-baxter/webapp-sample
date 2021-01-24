@@ -1,0 +1,20 @@
+# Expose the Event Listener as a LoadBalancer type Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    eventlistener: webapp-sample-event-listener
+  name: el-webapp-sample-event-listener-lb
+spec:
+  ports:
+    - name: http-listener
+      port: 8080
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: webapp-sample-event-listener
+  type: LoadBalancer
+

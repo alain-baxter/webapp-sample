@@ -1,0 +1,34 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipeline-sa
+secrets:
+  - name: github-credentials
+  - name: gcr-credentials
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: build-webapp-sample
+spec:
+  serviceAccountName: pipeline-sa
+  pipelineRef:
+    name: webapp-sample-pipeline
+  params:
+    - name: git-url
+      value: "https://github.com/alain-baxter/webapp-sample.git"
+    - name: git-revision
+      value: "main"
+    - name: image-name
+      value: "gcr.io/arctiq-mission-302500/webapp-sample"
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi

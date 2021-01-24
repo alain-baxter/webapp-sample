@@ -1,0 +1,57 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: webapp-sample-pipeline
+spec:
+  workspaces:
+    - name: shared-data
+  params:
+    - name: git-url
+      description: The URL of the Code Repository
+      type: string
+    - name: git-revision
+      description: The Revision of the Code Repository
+      type: string
+    - name: image-name
+      description: The output Image Name
+      type: string
+  tasks:
+    - name: fetch-source-code
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+    - name: test-and-package-app
+      taskRef:
+        name: maven
+      runAfter:
+        - fetch-source-code
+      workspaces:
+        - name: source
+          workspace: shared-data
+        - name: maven-settings
+          workspace: shared-data
+      params:
+        - name: GOALS
+          value:
+            - "clean"
+            - "test"
+            - "package"
+    - name: build-image-and-push
+      taskRef:
+        name: buildah
+      runAfter:
+        - test-and-package-app
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: IMAGE
+          value: $(params.image-name)
