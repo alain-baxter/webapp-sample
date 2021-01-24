@@ -105,6 +105,10 @@ spec:
               secretKey: secretToken
             eventTypes:
               - push
+        - cel:
+            filter: "!body.commits.exists(x, x.message.contains('[Pipeline]:'))"
+        - cel:
+            filter: "body.after != '0000000000000000000000000000000000000000'"
       bindings:
         - ref: github-push-binding
         - ref: webapp-sample-image-binding
