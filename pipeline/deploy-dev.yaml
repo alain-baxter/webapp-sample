@@ -24,19 +24,18 @@ spec:
     - name: commit-tag-push
       image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
       script: |
-        #!/usr/bin/env bash
-
         # Commit image update
         git add config/base/kustomization.yaml
         git commit -m "[Pipeline]: Update image to $(params.image-name)@$(params.image-digest)"
 
     - name: appctl-prepare
       image: gcr.io/google.com/cloudsdktool/cloud-sdk@sha256:1e36678d6f42c8d9c00f6accbe86cb3b3b26d39e55cb648c9468fd139e6e87e0 #tag: 324.0.0
-      workingDir: $(workspaces.source.path)/config/base
+      workingDir: $(workspaces.source.path)
       script: |
         appctl prepare dev
+
     - name: appclt-apply
       image: gcr.io/google.com/cloudsdktool/cloud-sdk@sha256:1e36678d6f42c8d9c00f6accbe86cb3b3b26d39e55cb648c9468fd139e6e87e0 #tag: 324.0.0
-      workingDir: $(workspaces.source.path)/config/base
+      workingDir: $(workspaces.source.path)
       script: |
         appctl apply dev
