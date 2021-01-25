@@ -23,6 +23,7 @@ spec:
 
     - name: commit-tag-push
       image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
+      workingDir: $(workspaces.source.path)
       script: |
         # Commit image update
         git add config/base/kustomization.yaml
