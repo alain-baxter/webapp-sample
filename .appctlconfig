@@ -1,0 +1,10 @@
+apiVersion: appctl.gke.io/v1beta1
+app_repo_url: https://github.com/alain-baxter/webapp-sample
+application_name: webapp-sample
+config_path: config
+creationTimestamp: null
+delivery_path: delivery
+deploy_repo_path: .deployment
+deployment_repo_url: https://github.com/alain-baxter/webapp-sample-deployment
+format: KustomizeFormat
+kind: Config

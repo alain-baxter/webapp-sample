@@ -20,6 +20,9 @@ spec:
     - name: image-digest
       description: The digest of the created image
       value: $(tasks.build-image-and-push.results.IMAGE_DIGEST)
+    - name: webapp-version
+      description: The version number of the webapp-sample
+      value: $(tasks.get-code-version.results.webapp-version)
   tasks:
     - name: fetch-source-code
       taskRef:
@@ -32,11 +35,19 @@ spec:
           value: $(params.git-url)
         - name: revision
           value: $(params.git-revision)
+    - name: get-code-version
+      taskRef:
+        name: get-version
+      runAfter:
+        - fetch-source-code
+      workspaces:
+        - name: source
+          workspace: shared-data
     - name: test-and-package-app
       taskRef:
         name: maven
       runAfter:
-        - fetch-source-code
+        - get-code-version
       workspaces:
         - name: source
           workspace: shared-data
@@ -48,7 +59,7 @@ spec:
             - "clean"
             - "test"
             - "package"
-            - "-Drevision=`cat version`"
+            - "-Drevision=$(tasks.get-code-version.results.webapp-version)"
     - name: build-image-and-push
       taskRef:
         name: buildah
@@ -60,3 +71,16 @@ spec:
       params:
         - name: IMAGE
           value: $(params.image-name)
+    - name: deploy-dev-environment
+      taskRef:
+        name: deploy-dev
+      runAfter:
+        - build-image-and-push
+      workspaces:
+        - name: source
+          workspace: shared-data
+      params:
+        - name: image-name
+          value: $(params.image-name)
+        - name: image-digest
+          value: $(tasks.build-image-and-push.results.IMAGE_DIGEST)

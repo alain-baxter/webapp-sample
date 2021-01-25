@@ -24,4 +24,4 @@ version=${major}.${minor}.${build}
 echo "New Version: $version"
 
 # Write incremented version to file
-echo "$version" > version
+echo -n "$version" > version
