@@ -16,7 +16,7 @@ spec:
     - name: dev-endpoint
   steps:
     - name: update-image
-      image: gcr.io/google.com/cloudsdktool/cloud-sdk@sha256:1e36678d6f42c8d9c00f6accbe86cb3b3b26d39e55cb648c9468fd139e6e87e0 #tag: 324.0.0
+      image: docker.io/lyft/kustomize:v1.0.11
       workingDir: $(workspaces.source.path)/config/base
       script: |
         kustomize edit set image $(params.image-name)@$(params.image-digest)
