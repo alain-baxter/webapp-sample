@@ -16,10 +16,10 @@ spec:
     - name: dev-endpoint
   steps:
     - name: update-image
-      image: docker.io/lyft/kustomize:v1.0.11
+      image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
       workingDir: $(workspaces.source.path)/config/base
       script: |
-        kustomize edit set image $(params.image-name)@$(params.image-digest)
+        sed -i 's#-\sdigest:\ssha256.*#- digest: $(params.image-digest)#' kustomization.yaml
 
     - name: commit-tag-push
       image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
