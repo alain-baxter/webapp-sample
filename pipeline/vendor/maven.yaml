@@ -1,5 +1,4 @@
 # Source: https://github.com/tektoncd/catalog/blob/master/task/maven/0.2/maven.yaml
-# Added .m2 caching from: https://github.com/tektoncd/catalog/blob/master/task/jib-maven/0.1/jib-maven.yaml
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Task
@@ -72,9 +71,6 @@ spec:
         The context directory within the repository for sources on
         which we want to execute maven goals.
       default: "."
-    - name: CACHE
-      description: The name of the volume for caching Maven artifacts
-      default: empty-dir-volume
   steps:
     - name: mvn-settings
       image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
@@ -145,13 +141,3 @@ spec:
         - -s
         - $(workspaces.maven-settings.path)/settings.xml
         - "$(params.GOALS)"
-      env:
-        - name: HOME
-          value: /workspace
-      volumeMounts:
-        - name: $(params.CACHE)
-          mountPath: /workspace/.m2
-
-  volumes:
-    - name: empty-dir-volume
-      emptyDir: {}
