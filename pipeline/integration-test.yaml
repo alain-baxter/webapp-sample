@@ -1,0 +1,52 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: integration-test
+spec:
+  workspaces:
+    - name: test-space
+  params:
+    - name: test-environment
+      description: The environment to deploy and run tests against
+    - name: build-version
+      description: The build version of the application
+  steps:
+    - name: get-endpoint
+      image: docker.io/curlimages/curl:7.72.0
+      workingDir: $(workspaces.test-space.path)
+      script: |
+        #!/bin/sh
+
+        curl -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+             https://kubernetes.default/api/v1/namespaces/$(params.test-environment)/services/webapp-sample > service.json
+
+        cat service.json
+
+        if grep -Fq '"name": "webapp-sample"' service.json
+        then
+          echo "Success"
+          exit 0
+        else
+          echo "Failed"
+          exit 1
+        fi
+
+    - name: get-running-version
+      image: docker.io/curlimages/curl:7.72.0
+      workingDir: $(workspaces.test-space.path)
+      script: |
+        curl -k http://$(cat service.json |grep ip |cut -d':' -f2| sed 's/\s*"\s*//g')/version > version.html
+
+    - name: run-tests
+      image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
+      workingDir: $(workspaces.test-space.path)
+      script: |
+        if grep -Fq "$(params.build-version)" version.html
+        then
+          echo "Success"
+          exit 0
+        else
+          echo "Failed"
+          exit 1
+        fi

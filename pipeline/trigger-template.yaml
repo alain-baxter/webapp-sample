@@ -1,14 +1,4 @@
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: trigger-sa
-secrets:
-  - name: github-credentials
-  - name: gcr-credentials
-  - name: argocd-env-secret
-
----
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
@@ -27,7 +17,7 @@ spec:
       metadata:
         generateName: webapp-sample-build-
       spec:
-        serviceAccountName: trigger-sa
+        serviceAccountName: pipeline-sa
         pipelineRef:
           name: webapp-sample-pipeline
         params:
@@ -54,3 +44,5 @@ spec:
                 resources:
                   requests:
                     storage: 100Mi
+          - name: test-space
+            emptyDir: {}

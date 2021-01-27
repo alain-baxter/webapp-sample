@@ -1,4 +1,47 @@
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipeline-sa
+  namespace: default
+secrets:
+  - name: github-credentials
+  - name: gcr-credentials
+  - name: argocd-env-secret
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-cr
+  namespace: default
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - services/finalizers
+      - endpoints
+      - namespaces
+    verbs:
+      - get
+      - list
+
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: pipeline-cr-binding
+subjects:
+  - kind: ServiceAccount
+    name: pipeline-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: pipeline-cr
+  apiGroup: rbac.authorization.k8s.io
+
+---
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
@@ -7,6 +50,7 @@ spec:
   workspaces:
     - name: build-data
     - name: deploy-data
+    - name: test-space
   params:
     - name: git-url
       description: The URL of the Code Repository
@@ -20,6 +64,9 @@ spec:
     - name: deploy-branch
       description: The branch of the deployer to work on
       default: main
+    - name: test-environment
+      description: The environment to deploy and run tests against
+      default: webapp-sample-dev
   results:
     - name: image-digest
       description: The digest of the created image
@@ -125,8 +172,22 @@ spec:
         - update-deploy-image
       params:
         - name: application-name
-          value: webapp-sample-dev
+          value: $(params.test-environment)
         - name: argocd-version
           value: v1.8.3
         - name: flags
           value: --insecure --grpc-web # Self-signed Cert
+
+    - name: dev-integration-test
+      taskRef:
+        name: integration-test
+      runAfter:
+        - sync-dev-application
+      workspaces:
+        - name: test-space
+          workspace: test-space
+      params:
+        - name: application-name
+          value: $(params.test-environment)
+        - name: build-version
+          value: $(tasks.get-code-version.results.build-version)
