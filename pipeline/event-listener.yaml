@@ -113,7 +113,9 @@ spec:
             eventTypes:
               - pull_requests
         - cel:
-            filter: "body.action == 'closed' && body.pull_request.merged == true"
+            filter: "body.action == 'closed'"
+        - cel:
+            filter: "body.pull_request.merged == true"
         - cel:
             filter: "body.repository.name == 'webapp-sample-deployment'"
       bindings:
