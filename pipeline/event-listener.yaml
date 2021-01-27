@@ -111,7 +111,7 @@ spec:
               secretName: github-webhook-secret
               secretKey: secretToken
             eventTypes:
-              - pull_requests
+              - pull_request
         - cel:
             filter: "body.action == 'closed'"
         - cel:
