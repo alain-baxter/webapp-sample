@@ -43,7 +43,7 @@ spec:
     - name: sync
       image: docker.io/argoproj/argocd:$(params.argocd-version)
       script: |
-        argocd app patch $(params.application-name) --patch '{"spec": { "source": { "targetRevision": $(params.revision) } }}' --type merge $(params.flags)
+        argocd app patch $(params.application-name) --patch '{"spec": { "source": { "targetRevision": "$(params.revision)" } }}' --type merge $(params.flags)
         argocd app sync $(params.application-name) --revision $(params.revision) $(params.flags)
     - name: wait
       image: docker.io/argoproj/argocd:$(params.argocd-version)
