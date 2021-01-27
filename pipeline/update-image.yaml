@@ -12,12 +12,14 @@ spec:
       description: The name of the new image
     - name: image-digest
       description: The digest of the new image
+    - name: deploy-branch
+      description: The branch of the deployer to commit to
   steps:
     - name: kustomize
       image: gcr.io/arctiq-mission-302500/kustomize@sha256:1573629db353c0900e42da95dd8cc4444858368204cfe618dd27a97ce1bfba2c # Tag: v3.8.1
       workingDir: $(workspaces.source.path)/config/base
       script: |
-        kustomize edit set image ${params.image-name}:${params.image-digest}
+        kustomize edit set image $(params.image-name)@$(params.image-digest)
 
     - name: push
       image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
@@ -31,4 +33,4 @@ spec:
         git add config/base/kustomization.yaml
         git commit -m "[Pipeline]: Update image to $(params.image-name)@$(params.image-digest)"
 
-        git push
+        git push origin HEAD:$(params.deploy-branch)

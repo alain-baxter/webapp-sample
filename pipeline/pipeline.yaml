@@ -17,6 +17,9 @@ spec:
     - name: image-name
       description: The output Image Name
       type: string
+    - name: deploy-branch
+      description: The branch of the deployer to work on
+      default: main
   results:
     - name: image-digest
       description: The digest of the created image
@@ -74,7 +77,7 @@ spec:
           workspace: build-data
       params:
         - name: IMAGE
-          value: "$(params.image-name):$(tasks.get-code-version.results.webapp-version)"
+          value: $(params.image-name):$(tasks.get-code-version.results.app-version)
 
     - name: get-deploy-repo
       taskRef:
@@ -97,7 +100,7 @@ spec:
         - name: url
           value: $(tasks.get-deploy-repo.results.deploy-repo-url)
         - name: revision
-          value: "main"
+          value: main
 
     - name: update-deploy-image
       taskRef:
@@ -106,12 +109,14 @@ spec:
         - fetch-deploy-repo
       workspaces:
         - name: source
-          workspace: build-data
+          workspace: deploy-data
       params:
         - name: image-name
           value: $(params.image-name)
         - name: image-digest
           value: $(tasks.build-image-and-push.results.IMAGE_DIGEST)
+        - name: deploy-branch
+          value: main
 
     - name: sync-dev-application
       taskRef:
@@ -124,4 +129,4 @@ spec:
         - name: argocd-version
           value: v1.8.3
         - name: flags
-          value: --insecure # Self-signed Cert
+          value: --insecure --grpc-web # Self-signed Cert

@@ -6,6 +6,7 @@ metadata:
 secrets:
   - name: github-credentials
   - name: gcr-credentials
+  - name: argocd-env-secret
 
 ---
 apiVersion: tekton.dev/v1beta1
@@ -24,11 +25,19 @@ spec:
     - name: image-name
       value: "gcr.io/arctiq-mission-302500/webapp-sample"
   workspaces:
-    - name: shared-data
+    - name: build-data
       volumeClaimTemplate:
         spec:
           accessModes:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 2Gi
+              storage: 1Gi
+    - name: deploy-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

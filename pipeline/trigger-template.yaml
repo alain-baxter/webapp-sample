@@ -6,6 +6,7 @@ metadata:
 secrets:
   - name: github-credentials
   - name: gcr-credentials
+  - name: argocd-env-secret
 
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
@@ -37,11 +38,19 @@ spec:
           - name: image-name
             value: $(tt.params.image-name)
         workspaces:
-          - name: shared-data
+          - name: build-data
             volumeClaimTemplate:
               spec:
                 accessModes:
                   - ReadWriteOnce
                 resources:
                   requests:
-                    storage: 2Gi
+                    storage: 1Gi
+          - name: deploy-data
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 100Mi
