@@ -1,0 +1,20 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: get-prod-revision
+spec:
+  workspaces:
+    - name: source
+      description: The workspace containing the Deploy Code
+  results:
+    - name: deploy-revision
+      description: The revision that should be deployed to prod
+  steps:
+    - name: get-version
+      image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        revision=`cat prod-revision`
+
+        echo -n "${revision}" | tee $(results.deploy-revision.path)

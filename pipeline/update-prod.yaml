@@ -1,0 +1,38 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: update-prod
+spec:
+  workspaces:
+    - name: source
+      description: The workspace containing the Deployment Code
+  params:
+    - name: app-version
+      description: The version of the application
+  steps:
+    - name: branch
+      image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        git checkout -b release-$(params.app-version)
+
+    - name: update-reference
+      image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        echo -n "v$(params.app-version)" > prod-version
+
+    - name: push
+      image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        # Check if the release branch was changed
+        if [ -n "$(git status --porcelain)" ]; then
+          # Set users Data
+          git config --global user.email "pipeline@example.org"
+          git config --global user.name "pipeline"
+
+          # Push Branch
+          git push origin release-$(params.app-version)
+        fi

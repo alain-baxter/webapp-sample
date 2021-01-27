@@ -1,0 +1,59 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: increment-version
+spec:
+  workspaces:
+    - name: source
+      description: The workspace containing the App Code
+  params:
+    - name: commit-branch
+      description: The branch to commit the version to
+      default: main
+  steps:
+    - name: increment
+      image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+
+        # Read current version from version file
+        version=`cat version | xargs`
+        major=0
+        minor=0
+        build=0
+
+        echo "Current Version: $version"
+
+        # break down the version number into it's components
+        regex="([0-9]+).([0-9]+).([0-9]+)"
+        if [[ $version =~ $regex ]]; then
+          major="${BASH_REMATCH[1]}"
+          minor="${BASH_REMATCH[2]}"
+          build="${BASH_REMATCH[3]}"
+        fi
+
+        # Increment the build number
+        build=$(echo $build + 1 | bc)
+
+        version=${major}.${minor}.${build}
+
+        echo "New Version: $version"
+
+        # Write incremented version to file
+        echo -n "$version" > version
+
+    - name: push
+      image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
+      workingDir: $(workspaces.source.path)
+      script: |
+        # Set users Data
+        git config --global user.email "pipeline@example.org"
+        git config --global user.name "pipeline"
+
+        # Commit image update
+        git add version
+        git commit -m "[Pipeline]: Increment Version after Release"
+
+        git push origin HEAD:$(params.commit-branch)

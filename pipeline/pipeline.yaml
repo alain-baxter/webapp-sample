@@ -48,7 +48,7 @@ metadata:
   name: webapp-sample-pipeline
 spec:
   workspaces:
-    - name: build-data
+    - name: app-data
     - name: deploy-data
     - name: test-space
   params:
@@ -83,7 +83,7 @@ spec:
         name: git-clone
       workspaces:
         - name: output
-          workspace: build-data
+          workspace: app-data
       params:
         - name: url
           value: $(params.git-url)
@@ -97,7 +97,7 @@ spec:
         - fetch-app-repo
       workspaces:
         - name: source
-          workspace: build-data
+          workspace: app-data
 
     - name: test-and-package-app
       taskRef:
@@ -106,9 +106,9 @@ spec:
         - get-code-version
       workspaces:
         - name: source
-          workspace: build-data
+          workspace: app-data
         - name: maven-settings
-          workspace: build-data
+          workspace: app-data
       params:
         - name: GOALS
           value:
@@ -124,19 +124,22 @@ spec:
         - test-and-package-app
       workspaces:
         - name: source
-          workspace: build-data
+          workspace: app-data
       params:
         - name: IMAGE
           value: $(params.image-name):$(tasks.get-code-version.results.app-version)
 
     - name: get-deploy-repo
       taskRef:
-        name: get-deploy-repo
+        name: get-reference-repo
       runAfter:
         - build-image-and-push
       workspaces:
         - name: source
-          workspace: build-data
+          workspace: app-data
+      params:
+        - name: ref-filename
+          value: deployment-repo
 
     - name: fetch-deploy-repo
       taskRef:
@@ -148,7 +151,7 @@ spec:
           workspace: deploy-data
       params:
         - name: url
-          value: $(tasks.get-deploy-repo.results.deploy-repo-url)
+          value: $(tasks.get-deploy-repo.results.repo-url)
         - name: revision
           value: main
 
@@ -202,7 +205,7 @@ spec:
         - dev-integration-test
       workspaces:
         - name: source
-          workspace: build-data
+          workspace: app-data
       params:
         - name: app-version
           value: $(tasks.get-code-version.results.app-version)
@@ -234,3 +237,109 @@ spec:
           value: --insecure --grpc-web # Self-signed Cert
         - name: revision
           value: v$(tasks.get-code-version.results.app-version)
+
+    - name: update-prod-reference
+      taskRef:
+        name: update-prof
+      workspaces:
+        - name: source
+          workspace: deploy-data
+      runAfter:
+        - sync-staging-application
+      params:
+        - name: app-version
+          value: $(tasks.get-code-version.results.app-version)
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: webapp-sample-release-pipeline
+spec:
+  workspaces:
+    - name: app-data
+    - name: deploy-data
+  params:
+    - name: git-url
+      description: The URL of the Code Repository
+      type: string
+    - name: git-revision
+      description: The Revision of the Code Repository
+      type: string
+    - name: prod-environment
+      description: The environment to deploy when the pipeline has completed
+      default: webapp-sample-prod
+  tasks:
+    - name: get-app-repo
+      taskRef:
+        name: get-reference-repo
+      workspaces:
+        - name: source
+          workspace: deploy-data
+      params:
+        - name: ref-filename
+          value: app-repo
+
+    - name: fetch-app-repo
+      taskRef:
+        name: git-clone
+      runAfter:
+        - get-app-repo
+      workspaces:
+        - name: output
+          workspace: app-data
+      params:
+        - name: url
+          value: $(tasks.get-app-repo.results.repo-url)
+        - name: revision
+          value: main
+
+    - name: increment-version
+      taskRef:
+        name: increment-version
+      runAfter:
+        - get-app-repo
+      workspaces:
+        - name: source
+          workspace: app-data
+      params:
+        - name: commit-branch
+          value: main
+
+    - name: fetch-deploy-repo
+      taskRef:
+        name: git-clone
+      runAfter:
+        - increment-version
+      workspaces:
+        - name: output
+          workspace: deploy-data
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
+    - name: get-deploy-revision
+      taskRef:
+        name: get-prod-revision
+      runAfter:
+        - fetch-deploy-repo
+      workspaces:
+        - name: source
+          workspace: deploy-data
+
+    - name: sync-prod-application
+      taskRef:
+        name: argocd-task-sync-and-wait
+      runAfter:
+        - get-deploy-revision
+      params:
+        - name: application-name
+          value: $(params.prod-environment)
+        - name: argocd-version
+          value: v1.8.3
+        - name: flags
+          value: --insecure --grpc-web # Self-signed Cert
+        - name: revision
+          value: v$(tasks.get-deploy-revision.results.deploy-revision)
