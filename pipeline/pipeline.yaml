@@ -67,6 +67,9 @@ spec:
     - name: test-environment
       description: The environment to deploy and run tests against
       default: webapp-sample-dev
+    - name: staging-environment
+      description: The environment to deploy when the pipeline has completed
+      default: webapp-sample-staging
   results:
     - name: image-digest
       description: The digest of the created image
@@ -191,3 +194,32 @@ spec:
           value: $(params.test-environment)
         - name: build-version
           value: $(tasks.get-code-version.results.build-version)
+
+    - name: tag-release
+      taskRef:
+        name: tag-release
+      runAfter:
+        - dev-integration-test
+      workspaces:
+        - name: app-source
+          workspace: build-data
+        - name: deploy-source
+          workspace: deploy-data
+      params:
+        - name: app-version
+          value: $(tasks.get-code-version.results.app-version)
+
+    - name: sync-staging-application
+      taskRef:
+        name: argocd-task-sync-and-wait
+      runAfter:
+        - tag-release
+      params:
+        - name: application-name
+          value: $(params.staging-environment)
+        - name: argocd-version
+          value: v1.8.3
+        - name: flags
+          value: --insecure --grpc-web # Self-signed Cert
+        - name: revision
+          value: v$(tasks.get-code-version.results.app-version)

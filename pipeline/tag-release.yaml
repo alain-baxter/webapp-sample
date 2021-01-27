@@ -1,0 +1,48 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: tag-release
+spec:
+  workspaces:
+    - name: app-source
+      description: The workspace containing the Application Code
+    - name: deploy-source
+      description: The workspace containing the Deployment Code
+  params:
+    - name: app-version
+      description: The version of the application
+  steps:
+    - name: tag-app
+      image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
+      workingDir: $(workspaces.app-source.path)
+      script: |
+        # Set users Data
+        git config --global user.email "pipeline@example.org"
+        git config --global user.name "pipeline"
+
+        # Delete Remote Tag if it exists
+        git push origin :refs/tags/v$(params.app-version)
+
+        # Create Tag
+        git tag -fa v$(params.app-version) -m "[Pipeline]: Tag Release v$(params.app-version)"
+
+        # Push Tag to Remote
+        git push origin --tags
+
+    - name: tag-deploy
+      image: docker.io/alpine/git@sha256:8715680f27333935bb384a678256faf8e8832a5f2a0d4a00c9d481111c5a29c0 #tag: v2.26.2
+      workingDir: $(workspaces.deploy-source.path)
+      script: |
+        # Set users Data
+        git config --global user.email "pipeline@example.org"
+        git config --global user.name "pipeline"
+
+        # Delete Remote Tag if it exists
+        git push origin :refs/tags/v$(params.app-version)
+
+        # Create Tag
+        git tag -fa v$(params.app-version) -m "[Pipeline]: Tag Release v$(params.app-version)"
+
+        # Push Tag to Remote
+        git push origin --tags
