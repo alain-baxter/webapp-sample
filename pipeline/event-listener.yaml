@@ -109,6 +109,8 @@ spec:
             filter: "!body.commits.exists(x, x.message.contains('[Pipeline]:'))"
         - cel:
             filter: "body.after != '0000000000000000000000000000000000000000'"
+        - cel:
+            filter: "body.ref == 'refs/heads/main'"
       bindings:
         - ref: github-push-binding
         - ref: webapp-sample-image-binding
