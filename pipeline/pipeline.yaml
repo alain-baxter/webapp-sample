@@ -240,7 +240,7 @@ spec:
 
     - name: update-prod-reference
       taskRef:
-        name: update-prof
+        name: update-prod
       workspaces:
         - name: source
           workspace: deploy-data
