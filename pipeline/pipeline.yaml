@@ -131,7 +131,7 @@ spec:
 
     - name: get-deploy-repo
       taskRef:
-        name: get-reference-repo
+        name: get-repo-reference
       runAfter:
         - build-image-and-push
       workspaces:
@@ -272,7 +272,7 @@ spec:
   tasks:
     - name: get-app-repo
       taskRef:
-        name: get-reference-repo
+        name: get-repo-reference
       workspaces:
         - name: source
           workspace: deploy-data
