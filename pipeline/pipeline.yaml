@@ -5,7 +5,8 @@ metadata:
   name: webapp-sample-pipeline
 spec:
   workspaces:
-    - name: shared-data
+    - name: build-data
+    - name: deploy-data
   params:
     - name: git-url
       description: The URL of the Code Repository
@@ -24,25 +25,27 @@ spec:
       description: The version number of the webapp-sample
       value: $(tasks.get-code-version.results.webapp-version)
   tasks:
-    - name: fetch-source-code
+    - name: fetch-app-repo
       taskRef:
         name: git-clone
       workspaces:
         - name: output
-          workspace: shared-data
+          workspace: build-data
       params:
         - name: url
           value: $(params.git-url)
         - name: revision
           value: $(params.git-revision)
+
     - name: get-code-version
       taskRef:
         name: get-version
       runAfter:
-        - fetch-source-code
+        - fetch-app-repo
       workspaces:
         - name: source
-          workspace: shared-data
+          workspace: build-data
+
     - name: test-and-package-app
       taskRef:
         name: maven
@@ -50,16 +53,17 @@ spec:
         - get-code-version
       workspaces:
         - name: source
-          workspace: shared-data
+          workspace: build-data
         - name: maven-settings
-          workspace: shared-data
+          workspace: build-data
       params:
         - name: GOALS
           value:
             - "clean"
             - "test"
             - "package"
-            - "-Drevision=$(tasks.get-code-version.results.webapp-version)"
+            - "-Drevision=$(tasks.get-code-version.results.build-version)"
+
     - name: build-image-and-push
       taskRef:
         name: buildah
@@ -67,7 +71,57 @@ spec:
         - test-and-package-app
       workspaces:
         - name: source
-          workspace: shared-data
+          workspace: build-data
       params:
         - name: IMAGE
           value: "$(params.image-name):$(tasks.get-code-version.results.webapp-version)"
+
+    - name: get-deploy-repo
+      taskRef:
+        name: get-deploy-repo
+      runAfter:
+        - build-image-and-push
+      workspaces:
+        - name: source
+          workspace: build-data
+
+    - name: fetch-deploy-repo
+      taskRef:
+        name: git-clone
+      runAfter:
+        - get-deploy-repo
+      workspaces:
+        - name: output
+          workspace: deploy-data
+      params:
+        - name: url
+          value: $(tasks.get-deploy-repo.results.deploy-repo-url)
+        - name: revision
+          value: "main"
+
+    - name: update-deploy-image
+      taskRef:
+        name: update-image
+      runAfter:
+        - fetch-deploy-repo
+      workspaces:
+        - name: source
+          workspace: build-data
+      params:
+        - name: image-name
+          value: $(params.image-name)
+        - name: image-digest
+          value: $(tasks.build-image-and-push.results.IMAGE_DIGEST)
+
+    - name: sync-dev-application
+      taskRef:
+        name: argocd-task-sync-and-wait
+      runAfter:
+        - update-deploy-image
+      params:
+        - name: application-name
+          value: webapp-sample-dev
+        - name: argocd-version
+          value: v1.8.3
+        - name: flags
+          value: --insecure # Self-signed Cert

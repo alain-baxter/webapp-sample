@@ -8,8 +8,10 @@ spec:
     - name: source
       description: The workspace containing the Webapp Code
   results:
-    - name: webapp-version
-      description: The current versio of the Webapp being built
+    - name: build-version
+      description: The current version of the webapp with the build timestamp
+    - name: app-version
+      description: The current version of the webapp
   steps:
     - name: get-version
       image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
@@ -18,4 +20,5 @@ spec:
         version=`cat version`
         runtime=`date +%s`
 
-        echo -n "${version}-${runtime}" | tee $(results.webapp-version.path)
+        echo -n "${version}" | tee $(results.app-version.path)
+        echo -n "${version}-${runtime}" | tee $(results.build-version.path)
