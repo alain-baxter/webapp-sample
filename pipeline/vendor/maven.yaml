@@ -1,4 +1,17 @@
 # Source: https://github.com/tektoncd/catalog/blob/master/task/maven/0.2/maven.yaml
+# Added m2 caching
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pipeline-maven-m2-cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi
+
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Task
@@ -141,3 +154,14 @@ spec:
         - -s
         - $(workspaces.maven-settings.path)/settings.xml
         - "$(params.GOALS)"
+      env:
+        - name: HOME
+          value: /workspace
+      volumeMounts:
+        - name: m2-cache
+          mountPath: /workspace/.m2
+
+  volumes:
+    - name: m2-cache
+      persistentVolumeClaim:
+        claimName: pipeline-maven-m2-cache
