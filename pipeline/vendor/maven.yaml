@@ -93,6 +93,7 @@ spec:
         echo 'using existing $(workspaces.maven-settings.path)/settings.xml' && exit 0
         cat > $(workspaces.maven-settings.path)/settings.xml <<EOF
         <settings>
+          <localRepository>/workspace/.m2</localRepository>
           <servers>
             <!-- The servers added here are generated from environment variables. Don't change. -->
             <!-- ### SERVER's USER INFO from ENV ### -->

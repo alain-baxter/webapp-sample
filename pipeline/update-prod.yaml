@@ -33,6 +33,10 @@ spec:
           git config --global user.email "pipeline@example.org"
           git config --global user.name "pipeline"
 
-          # Push Branch
+          # Commit new prod-version
+          git add prod-version
+          git commit -m "[Pipeline]: Set new Prod Version for Release"
+
+          # Push to origin
           git push origin release-$(params.app-version)
         fi
