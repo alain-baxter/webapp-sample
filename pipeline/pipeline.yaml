@@ -195,15 +195,25 @@ spec:
         - name: build-version
           value: $(tasks.get-code-version.results.build-version)
 
-    - name: tag-release
+    - name: tag-app-release
       taskRef:
         name: tag-release
       runAfter:
         - dev-integration-test
       workspaces:
-        - name: app-source
+        - name: source
           workspace: build-data
-        - name: deploy-source
+      params:
+        - name: app-version
+          value: $(tasks.get-code-version.results.app-version)
+
+    - name: tag-deploy-release
+      taskRef:
+        name: tag-release
+      runAfter:
+        - dev-integration-test
+      workspaces:
+        - name: source
           workspace: deploy-data
       params:
         - name: app-version
@@ -213,7 +223,8 @@ spec:
       taskRef:
         name: argocd-task-sync-and-wait
       runAfter:
-        - tag-release
+        - tag-app-release
+        - tag-deploy-release
       params:
         - name: application-name
           value: $(params.staging-environment)
