@@ -18,12 +18,12 @@ spec:
         git fetch
 
         if [ -n "$(git ls-remote --heads origin release-$(params.app-version))" ]; then
-          echo "No remote branch detected"
-          git checkout -b release-$(params.app-version)
-        else
           echo "Remote branch detected"
           git checkout -b release-$(params.app-version) origin/release-$(params.app-version)
           git pull
+        else
+          echo "No remote branch detected"
+          git checkout -b release-$(params.app-version)
         fi
 
     - name: update-reference
