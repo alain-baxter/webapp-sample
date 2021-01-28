@@ -1,0 +1,31 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: release-webapp-sample
+spec:
+  serviceAccountName: pipeline-sa
+  pipelineRef:
+    name: webapp-sample-release-pipeline
+  params:
+    - name: git-url
+      value: "https://github.com/alain-baxter/webapp-sample-deployment.git"
+    - name: git-revision
+      value: "main"
+  workspaces:
+    - name: app-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+    - name: deploy-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

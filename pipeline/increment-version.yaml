@@ -19,7 +19,7 @@ spec:
         #!/usr/bin/env bash
 
         # Read current version from version file
-        version=`cat version | xargs`
+        version=`cat version`
         major=0
         minor=0
         build=0
@@ -35,7 +35,7 @@ spec:
         fi
 
         # Increment the build number
-        build=$(echo $build + 1 | bc)
+        build=$((build + 1))
 
         version=${major}.${minor}.${build}
 

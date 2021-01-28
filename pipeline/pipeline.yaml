@@ -270,9 +270,23 @@ spec:
       description: The environment to deploy when the pipeline has completed
       default: webapp-sample-prod
   tasks:
+    - name: fetch-deploy-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: deploy-data
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
     - name: get-app-repo
       taskRef:
         name: get-repo-reference
+      runAfter:
+        - fetch-deploy-repo
       workspaces:
         - name: source
           workspace: deploy-data
@@ -298,7 +312,7 @@ spec:
       taskRef:
         name: increment-version
       runAfter:
-        - get-app-repo
+        - fetch-app-repo
       workspaces:
         - name: source
           workspace: app-data
@@ -306,25 +320,11 @@ spec:
         - name: commit-branch
           value: main
 
-    - name: fetch-deploy-repo
-      taskRef:
-        name: git-clone
-      runAfter:
-        - increment-version
-      workspaces:
-        - name: output
-          workspace: deploy-data
-      params:
-        - name: url
-          value: $(params.git-url)
-        - name: revision
-          value: $(params.git-revision)
-
     - name: get-deploy-revision
       taskRef:
         name: get-prod-revision
       runAfter:
-        - fetch-deploy-repo
+        - increment-version
       workspaces:
         - name: source
           workspace: deploy-data
@@ -342,4 +342,4 @@ spec:
         - name: flags
           value: --insecure --grpc-web # Self-signed Cert
         - name: revision
-          value: v$(tasks.get-deploy-revision.results.deploy-revision)
+          value: $(tasks.get-deploy-revision.results.deploy-revision)
