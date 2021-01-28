@@ -47,5 +47,5 @@ spec:
           git commit -m "[Pipeline]: Set new Prod Version for Release"
 
           # Push to origin
-          git push
+          git push -u origin release-$(params.app-version)
         fi
