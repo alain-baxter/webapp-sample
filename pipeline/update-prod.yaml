@@ -16,7 +16,15 @@ spec:
       workingDir: $(workspaces.source.path)
       script: |
         git fetch
-        git checkout -b release-$(params.app-version)
+
+        if [ -n "$(git ls-remote --heads origin release-$(params.app-version))" ]; then
+          echo "No remote branch detected"
+          git checkout -b release-$(params.app-version)
+        else
+          echo "Remote branch detected"
+          git checkout -b release-$(params.app-version) origin/release-$(params.app-version)
+          git pull
+        fi
 
     - name: update-reference
       image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
@@ -39,5 +47,5 @@ spec:
           git commit -m "[Pipeline]: Set new Prod Version for Release"
 
           # Push to origin
-          git push origin release-$(params.app-version)
+          git push
         fi
